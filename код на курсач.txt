@@ -1,0 +1,285 @@
+-- Базы данных
+
+CREATE TABLE "librarian" (
+  "lib_id" SERIAL PRIMARY KEY,
+  "lib_family_name" varchar,
+  "lib_name" varchar,
+  "lib_surname" varchar,
+  "lib_birth_date" date,
+  "lib_phone_number" varchar
+);
+
+CREATE TABLE "reader" (
+  "rea_id" SERIAL PRIMARY KEY,
+  "rea_family_name" varchar,
+  "rea_name" varchar,
+  "rea_surname" varchar,
+  "rea_birth_date" date,
+  "rea_registration_date" date,
+  "rea_address" varchar,
+  "rea_phone_number" varchar,
+  "rea_passport_encrypted" varchar
+);
+
+CREATE TABLE "publishing_house" (
+  "pub_id" SERIAL PRIMARY KEY,
+  "pub_name" varchar,
+  "pub_address" varchar,
+  "pub_phone_number" varchar,
+  "pub_email" varchar
+);
+
+CREATE TABLE "genre" (
+  "gen_id" SERIAL PRIMARY KEY,
+  "gen_name" varchar
+);
+
+CREATE TABLE "author" (
+  "aut_id" SERIAL PRIMARY KEY,
+  "aut_family_name" varchar,
+  "aut_name" varchar,
+  "aut_surname" varchar,
+  "aut_birth_date" date
+);
+
+CREATE TABLE "literature" (
+  "lit_id" SERIAL PRIMARY KEY,
+  "lit_name" varchar,
+  "lit_gen_id" integer REFERENCES "genre" ("gen_id") ON DELETE CASCADE,
+  "lit_aut_id" integer REFERENCES "author" ("aut_id") ON DELETE CASCADE,
+  "lit_pub_id" integer REFERENCES "publishing_house" ("pub_id") ON DELETE CASCADE,
+  "lit_purchase_date" date,
+  "lit_age_limit" integer,
+  "lit_price" integer
+);
+
+CREATE TABLE "literature_movement" (
+  "mov_id" SERIAL PRIMARY KEY,
+  "mov_lib_id" integer REFERENCES "librarian" ("lib_id") ON DELETE CASCADE,
+  "mov_rea_id" integer REFERENCES "reader" ("rea_id") ON DELETE CASCADE,
+  "mov_lit_id" integer REFERENCES "literature" ("lit_id") ON DELETE CASCADE,
+  "mov_issue_date" date,
+  "mov_return_date" date,
+  "mov_actual_date" date
+);
+
+CREATE TABLE "penalties" (
+  "pen_id" SERIAL PRIMARY KEY,
+  "pen_rea_id" integer REFERENCES "reader" ("rea_id") ON DELETE CASCADE,
+  "pen_lib_id" integer REFERENCES "librarian" ("lib_id") ON DELETE CASCADE,
+  "pen_mov_id" integer REFERENCES "literature_movement" ("mov_id") ON DELETE CASCADE,
+  "pen_ammount" integer,
+  "pen_reason" varchar,
+  "pen_paid" bool
+);
+
+--Тригеры и функции
+
+CREATE OR REPLACE FUNCTION check_unique_phone_number()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF EXISTS (SELECT * FROM reader WHERE rea_phone_number = NEW.rea_phone_number) THEN
+        RAISE EXCEPTION 'Читатель с таким номером телефона % уже существует.', NEW.rea_phone_number;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER check_unique_phone_number_trigger
+BEFORE INSERT ON reader
+FOR EACH ROW
+EXECUTE FUNCTION check_unique_phone_number();
+
+CREATE OR REPLACE FUNCTION check_reader_before_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF EXISTS (SELECT * FROM literature_movement WHERE mov_rea_id = OLD.rea_id AND mov_actual_date is null) THEN
+        RAISE EXCEPTION 'Читатель % имеет невозвращенные книги.', OLD.rea_id;
+    END IF;
+    
+    IF EXISTS (SELECT * FROM penalties WHERE pen_rea_id = OLD.rea_id AND pen_paid = FALSE) THEN
+        RAISE EXCEPTION 'Читатель % имеет неоплаченные пени.', OLD.rea_id;
+    END IF;
+
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER check_reader_before_delete_trigger
+BEFORE DELETE ON reader
+FOR EACH ROW
+EXECUTE FUNCTION check_reader_before_delete();
+
+CREATE OR REPLACE FUNCTION checking_age_limit_and_reader_age()
+RETURNS TRIGGER AS $$
+DECLARE
+    reader_age INTEGER;
+    literature_age_limit INTEGER;
+BEGIN
+    SELECT EXTRACT(YEAR FROM AGE(CURRENT_DATE, rea_birth_date)) INTO reader_age
+	FROM reader
+    WHERE rea_id = NEW.mov_rea_id;
+
+    SELECT lit_age_limit INTO literature_age_limit
+    FROM literature
+    WHERE lit_id = NEW.mov_lit_id;
+
+    IF reader_age < literature_age_limit THEN
+        RAISE EXCEPTION 'Возраст читателя не соответствует возрастному рейтингу книги.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER checking_age_limit_and_reader_age_trigger
+BEFORE INSERT ON literature_movement
+FOR EACH ROW
+EXECUTE FUNCTION checking_age_limit_and_reader_age();
+
+CREATE OR REPLACE FUNCTION check_correct_literature_movement_dates()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.mov_actual_date IS NOT NULL AND NEW.mov_issue_date > NEW.mov_actual_date THEN
+        RAISE EXCEPTION 'Дата возврата не может быть раньше даты выдачи!';
+    END IF;
+
+    IF NEW.mov_issue_date > NEW.mov_return_date THEN
+        RAISE EXCEPTION 'Дата предполагаемого возврата не может быть раньше даты выдачи!';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER check_correct_literature_movement_dates_trigger
+BEFORE INSERT ON literature_movement
+FOR EACH ROW
+EXECUTE FUNCTION check_correct_literature_movement_dates();
+
+CREATE OR REPLACE FUNCTION calculate_penalties()
+RETURNS TRIGGER AS $$
+DECLARE
+    overdue_days INTEGER;
+    penalties_rate INTEGER := 10;
+    penalties_calc INTEGER;
+	penalties_reason varchar := 'Просрочка сдачи книги';
+BEGIN
+    IF NEW.mov_actual_date > NEW.mov_return_date THEN
+        overdue_days := NEW.mov_actual_date - NEW.mov_return_date;
+        penalties_calc := overdue_days * penalties_rate;
+
+        INSERT INTO penalties (pen_rea_id, pen_lib_id, pen_mov_id, pen_ammount, pen_reason, pen_paid)
+        VALUES (NEW.mov_rea_id, NEW.mov_lib_id, NEW.mov_id, penalties_calc, penalties_reason, 'False');
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER calculate_penalties_trigger
+AFTER UPDATE ON literature_movement
+FOR EACH ROW
+WHEN (NEW.mov_actual_date IS NOT NULL)
+EXECUTE FUNCTION calculate_penalties();
+
+CREATE OR REPLACE FUNCTION check_before_deleting_literature()
+RETURNS TRIGGER AS $$
+DECLARE
+    borrow_count INTEGER;
+BEGIN
+    SELECT  COUNT(*) INTO borrow_count FROM literature_movement
+    WHERE mov_lit_id = OLD.lit_id AND mov_actual_date IS NULL;
+
+    IF borrow_count > 0 THEN
+        RAISE EXCEPTION 'Невозможно удалить книгу, так как она выдана читателю!';
+    END IF;
+
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER check_before_deleting_literature_trigger
+BEFORE DELETE ON literature
+FOR EACH ROW
+EXECUTE FUNCTION check_before_deleting_literature();
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE OR REPLACE FUNCTION encrypt_reader_passport()
+RETURNS TRIGGER AS $$
+DECLARE
+    secret_key TEXT := 'ochen_secretni_kluch';
+BEGIN
+
+    IF NEW.rea_passport_encrypted IS NOT NULL THEN
+        NEW.rea_passport_encrypted := pgp_sym_encrypt(NEW.rea_passport_encrypted, secret_key);
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER encrypt_reader_passport_trigger
+BEFORE INSERT OR UPDATE ON reader
+FOR EACH ROW
+EXECUTE FUNCTION encrypt_reader_passport();
+
+--Создание и настройка ролей
+
+CREATE ROLE librarian with NOLOGIN;
+GRANT SELECT, INSERT, UPDATE, DELETE ON author TO librarian;
+GRANT SELECT, INSERT, UPDATE, DELETE ON genre TO librarian;
+GRANT SELECT, INSERT, UPDATE, DELETE ON librarian TO librarian;
+GRANT SELECT, INSERT, UPDATE, DELETE ON literature TO librarian;
+GRANT SELECT, INSERT, UPDATE, DELETE ON literature_movement TO librarian;
+GRANT SELECT, INSERT, UPDATE, DELETE ON penalties TO librarian;
+GRANT SELECT, INSERT, UPDATE, DELETE ON publishing_house TO librarian;
+GRANT SELECT, INSERT, UPDATE, DELETE ON reader TO librarian;
+GRANT USAGE, SELECT ON SEQUENCE author_aut_id_seq TO librarian;
+GRANT USAGE, SELECT ON SEQUENCE genre_gen_id_seq TO librarian;
+GRANT USAGE, SELECT ON SEQUENCE librarian_lib_id_seq TO librarian;
+GRANT USAGE, SELECT ON SEQUENCE literature_lit_id_seq TO librarian;
+GRANT USAGE, SELECT ON SEQUENCE literature_movement_mov_id_seq TO librarian;
+GRANT USAGE, SELECT ON SEQUENCE penalties_pen_id_seq TO librarian;
+GRANT USAGE, SELECT ON SEQUENCE publishing_house_pub_id_seq TO librarian;
+GRANT USAGE, SELECT ON SEQUENCE reader_rea_id_seq TO librarian;
+
+CREATE USER lib1 WITH PASSWORD 'pas1';
+GRANT librarian TO lib1;
+
+CREATE ROLE reader with NOLOGIN;
+GRANT SELECT ON author TO reader;
+GRANT SELECT ON genre TO reader;
+GRANT SELECT ON literature TO reader;
+GRANT SELECT ON literature_movement TO reader;
+GRANT SELECT ON penalties TO reader;
+GRANT SELECT ON publishing_house TO reader;
+GRANT SELECT ON reader TO reader;
+
+CREATE USER rea1 WITH PASSWORD 'pas1';
+GRANT reader TO rea1;
+
+CREATE ROLE sysadmin WITH NOLOGIN;
+ALTER ROLE sysadmin WITH SUPERUSER;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO sysadmin;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO sysadmin;
+GRANT SELECT, INSERT, UPDATE, DELETE ON author TO sysadmin;
+GRANT SELECT, INSERT, UPDATE, DELETE ON genre TO sysadmin;
+GRANT SELECT, INSERT, UPDATE, DELETE ON librarian TO sysadmin;
+GRANT SELECT, INSERT, UPDATE, DELETE ON literature TO sysadmin;
+GRANT SELECT, INSERT, UPDATE, DELETE ON literature_movement TO sysadmin;
+GRANT SELECT, INSERT, UPDATE, DELETE ON penalties TO sysadmin;
+GRANT SELECT, INSERT, UPDATE, DELETE ON publishing_house TO sysadmin;
+GRANT SELECT, INSERT, UPDATE, DELETE ON reader TO sysadmin;
+GRANT USAGE, SELECT ON SEQUENCE author_aut_id_seq TO sysadmin;
+GRANT USAGE, SELECT ON SEQUENCE genre_gen_id_seq TO sysadmin;
+GRANT USAGE, SELECT ON SEQUENCE librarian_lib_id_seq TO sysadmin;
+GRANT USAGE, SELECT ON SEQUENCE literature_lit_id_seq TO sysadmin;
+GRANT USAGE, SELECT ON SEQUENCE literature_movement_mov_id_seq TO sysadmin;
+GRANT USAGE, SELECT ON SEQUENCE penalties_pen_id_seq TO sysadmin;
+GRANT USAGE, SELECT ON SEQUENCE publishing_house_pub_id_seq TO sysadmin;
+GRANT USAGE, SELECT ON SEQUENCE reader_rea_id_seq TO sysadmin;
+
+CREATE USER adm1 WITH PASSWORD 'pas1';
+GRANT sysadmin TO adm1;
