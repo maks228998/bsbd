@@ -168,19 +168,19 @@ class lib_gui_MainWindow(object):
 "</style></head><body style=\" font-family:\'MS Shell Dlg 2\'; font-size:7.8pt; font-weight:400; font-style:normal;\">\n"
 "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:8pt;\">фильтр 4</span></p></body></html>"))
         self.pushButton_filter.setText(_translate("MainWindow", "Фильтр"))
-        self.pushButton_and_or_2.setText(_translate("MainWindow", "AND"))
-        self.pushButton_and_or_3.setText(_translate("MainWindow", "AND"))
-        self.pushButton_and_or_4.setText(_translate("MainWindow", "AND"))
-        self.pushButton_and_or_6.setText(_translate("MainWindow", "AND"))
-        self.pushButton_and_or_7.setText(_translate("MainWindow", "AND"))
-        self.pushButton_and_or_5.setText(_translate("MainWindow", "AND"))
-        self.pushButton_and_or_8.setText(_translate("MainWindow", "AND"))
+        self.pushButton_and_or_2.setText(_translate("MainWindow", ""))
+        self.pushButton_and_or_3.setText(_translate("MainWindow", ""))
+        self.pushButton_and_or_4.setText(_translate("MainWindow", ""))
+        self.pushButton_and_or_6.setText(_translate("MainWindow", ""))
+        self.pushButton_and_or_7.setText(_translate("MainWindow", ""))
+        self.pushButton_and_or_5.setText(_translate("MainWindow", ""))
+        self.pushButton_and_or_8.setText(_translate("MainWindow", ""))
         self.textBrowser_8.setHtml(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'MS Shell Dlg 2\'; font-size:7.8pt; font-weight:400; font-style:normal;\">\n"
 "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:8pt;\">фильтр 8</span></p></body></html>"))
-        self.pushButton_and_or_9.setText(_translate("MainWindow", "AND"))
+        self.pushButton_and_or_9.setText(_translate("MainWindow", ""))
         self.textBrowser_9.setHtml(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"

@@ -13,6 +13,7 @@ class LoginWindow(QMainWindow):
 
         self.ui.pushButton.clicked.connect(self.login)
 
+
     def connect_bd(self, username, password):
         try:
             conn = psycopg2.connect(
@@ -31,9 +32,7 @@ class LoginWindow(QMainWindow):
         if conn is None:
             return None
 
-        values = ('lib1',
-                  'rea1',
-                  'adm1')
+        values = ('lib1', 'rea1', 'adm1')
 
         cursor = conn.cursor()
         for value in values:
@@ -71,6 +70,14 @@ class lib_gui_Window(QMainWindow):
         self.conn = conn
 
         self.lib_gui_ui.comboBox.textActivated.connect(self.onActivated)
+        self.masks_for_tables = [["Авторы", "author"],
+                                 ["Жанры", "genre"],
+                                 ["Библиотекари", "librarian"],
+                                 ["Литература", "literature"],
+                                 ["Движение книг", "literature_movement"],
+                                 ["Пени", "penalties"],
+                                 ["Издательство", "publishing_house"],
+                                 ["Читатели", "reader"]]
         self.setCombo()
 
         self.lib_gui_ui.pushButton_and_or_2.clicked.connect(lambda: self.change_button(self.lib_gui_ui.pushButton_and_or_2))
@@ -82,627 +89,158 @@ class lib_gui_Window(QMainWindow):
         self.lib_gui_ui.pushButton_and_or_8.clicked.connect(lambda: self.change_button(self.lib_gui_ui.pushButton_and_or_8))
         self.lib_gui_ui.pushButton_and_or_9.clicked.connect(lambda: self.change_button(self.lib_gui_ui.pushButton_and_or_9))
 
-        self.table = "author"
-        self.colcount = 5;
+        self.Button_and_or = ([self.lib_gui_ui.pushButton_and_or_2,
+                               self.lib_gui_ui.pushButton_and_or_3,
+                               self.lib_gui_ui.pushButton_and_or_4,
+                               self.lib_gui_ui.pushButton_and_or_5,
+                               self.lib_gui_ui.pushButton_and_or_6,
+                               self.lib_gui_ui.pushButton_and_or_7,
+                               self.lib_gui_ui.pushButton_and_or_8,
+                               self.lib_gui_ui.pushButton_and_or_9])
 
-        self.lib_gui_ui.pushButton_filter.clicked.connect(self.filter)
-        self.lib_gui_ui.pushButton_add.clicked.connect(self.add)
-        self.lib_gui_ui.pushButton_delete.clicked.connect(self.delete)
-        self.lib_gui_ui.pushButton_update.clicked.connect(self.update)
+        self.textEdit = [self.lib_gui_ui.textEdit_1,
+                         self.lib_gui_ui.textEdit_2,
+                         self.lib_gui_ui.textEdit_3,
+                         self.lib_gui_ui.textEdit_4,
+                         self.lib_gui_ui.textEdit_5,
+                         self.lib_gui_ui.textEdit_6,
+                         self.lib_gui_ui.textEdit_7,
+                         self.lib_gui_ui.textEdit_8,
+                         self.lib_gui_ui.textEdit_9]
+
+
+        self.textBrowser = [self.lib_gui_ui.textBrowser_1,
+                            self.lib_gui_ui.textBrowser_2,
+                            self.lib_gui_ui.textBrowser_3,
+                            self.lib_gui_ui.textBrowser_4,
+                            self.lib_gui_ui.textBrowser_5,
+                            self.lib_gui_ui.textBrowser_6,
+                            self.lib_gui_ui.textBrowser_7,
+                            self.lib_gui_ui.textBrowser_8,
+                            self.lib_gui_ui.textBrowser_9]
+
+        self.lib_gui_ui.pushButton_filter.clicked.connect(self.filter_table)
+        self.lib_gui_ui.pushButton_add.clicked.connect(self.add_table)
+        self.lib_gui_ui.pushButton_delete.clicked.connect(self.delete_table)
+        self.lib_gui_ui.pushButton_update.clicked.connect(self.update_table)
 
     def change_button(self, button):
         if button.text() == "AND":
             button.setText("OR")
+        elif button.text() == "OR":
+            button.setText("")
         else:
             button.setText("AND")
 
+    def do_show(self, element):
+        element.show()
+
+    def do_hide(self, element):
+        element.hide()
+
     def setCombo(self):
-        self.lib_gui_ui.comboBox.addItem("Авторы")
-        self.lib_gui_ui.comboBox.addItem("Жанры")
-        self.lib_gui_ui.comboBox.addItem("Библиотекари")
-        self.lib_gui_ui.comboBox.addItem("Литература")
-        self.lib_gui_ui.comboBox.addItem("Движение книг")
-        self.lib_gui_ui.comboBox.addItem("Пени")
-        self.lib_gui_ui.comboBox.addItem("Издательство")
-        self.lib_gui_ui.comboBox.addItem("Читатели")
+        for i in range(len(self.masks_for_tables)):
+            self.lib_gui_ui.comboBox.addItem(self.masks_for_tables[i][0])
 
     def onActivated(self):
         text = self.lib_gui_ui.comboBox.currentText()
-        if text == 'Авторы':
-            self.table = "author"
-            self.lib_gui_ui.tableWidget.setSortingEnabled(False)
-            self.showAutor()
-            self.lib_gui_ui.tableWidget.setSortingEnabled(True)
-        elif text == 'Жанры':
-            self.table = "genre"
-            self.lib_gui_ui.tableWidget.setSortingEnabled(False)
-            self.showGenre()
-            self.lib_gui_ui.tableWidget.setSortingEnabled(True)
-        elif text == 'Библиотекари':
-            self.table = "librarian"
-            self.lib_gui_ui.tableWidget.setSortingEnabled(False)
-            self.showLibrarian()
-            self.lib_gui_ui.tableWidget.setSortingEnabled(True)
-        elif text == 'Литература':
-            self.table = "literature"
-            self.lib_gui_ui.tableWidget.setSortingEnabled(False)
-            self.showLiterature()
-            self.lib_gui_ui.tableWidget.setSortingEnabled(True)
-        elif text == 'Движение книг':
-            self.table = "literature_movement"
-            self.lib_gui_ui.tableWidget.setSortingEnabled(False)
-            self.showLiterature_movement()
-            self.lib_gui_ui.tableWidget.setSortingEnabled(True)
-        elif text == 'Пени':
-            self.table = "penalties"
-            self.lib_gui_ui.tableWidget.setSortingEnabled(False)
-            self.showPenalties()
-            self.lib_gui_ui.tableWidget.setSortingEnabled(True)
-        elif text == 'Издательство':
-            self.table = "publishing_house"
-            self.lib_gui_ui.tableWidget.setSortingEnabled(False)
-            self.showPublishing_house()
-            self.lib_gui_ui.tableWidget.setSortingEnabled(True)
-        elif text == 'Читатели':
-            self.table = "reader"
-            self.lib_gui_ui.tableWidget.setSortingEnabled(False)
-            self.showReader()
-            self.lib_gui_ui.tableWidget.setSortingEnabled(True)
-
-    def showAutor(self):
-        self.colcount = 5
-        self.lib_gui_ui.tableWidget.setColumnCount(self.colcount)
-        row_labels = ["id", "Фамилия", "Имя", "Отчество", "Дата рождения"]
-        self.lib_gui_ui.tableWidget.setHorizontalHeaderLabels(row_labels)
-
-        self.buttons_show = [self.lib_gui_ui.pushButton_and_or_2, self.lib_gui_ui.pushButton_and_or_3,
-                             self.lib_gui_ui.pushButton_and_or_4, self.lib_gui_ui.pushButton_and_or_5]
-        for button in self.buttons_show:
-            button.show()
-
-        self.buttons_hide = [self.lib_gui_ui.pushButton_and_or_6, self.lib_gui_ui.pushButton_and_or_7,
-                             self.lib_gui_ui.pushButton_and_or_8, self.lib_gui_ui.pushButton_and_or_9]
-        for button in self.buttons_hide:
-            button.hide()
-
-        self.textEdit_show = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2,
-                              self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                              self.lib_gui_ui.textEdit_5]
-        for textEdit in self.textEdit_show:
-            textEdit.show()
-
-        self.textEdit_hide = [self.lib_gui_ui.textEdit_6, self.lib_gui_ui.textEdit_7,
-                              self.lib_gui_ui.textEdit_8, self.lib_gui_ui.textEdit_9]
-        for textEdit in self.textEdit_hide:
-            textEdit.hide()
-
-        self.textBrowser_show = [self.lib_gui_ui.textBrowser_1, self.lib_gui_ui.textBrowser_2,
-                                 self.lib_gui_ui.textBrowser_3, self.lib_gui_ui.textBrowser_4,
-                                 self.lib_gui_ui.textBrowser_5]
-        for textBrowser in self.textBrowser_show:
-            textBrowser.show()
-
-        self.textBrowser_hide = [self.lib_gui_ui.textBrowser_6, self.lib_gui_ui.textBrowser_7,
-                                 self.lib_gui_ui.textBrowser_8, self.lib_gui_ui.textBrowser_9]
-        for textBrowser in self.textBrowser_hide:
-            textBrowser.hide()
-
-        self.textEdit_setText = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2,
-                                 self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                                 self.lib_gui_ui.textEdit_5]
-        for textEdit in self.textEdit_setText:
-            textEdit.setText("")
-
-        self.lib_gui_ui.textBrowser_1.setText(row_labels[0])
-        self.lib_gui_ui.textBrowser_2.setText(row_labels[1])
-        self.lib_gui_ui.textBrowser_3.setText(row_labels[2])
-        self.lib_gui_ui.textBrowser_4.setText(row_labels[3])
-        self.lib_gui_ui.textBrowser_5.setText(row_labels[4])
-
-        cursor = self.conn.cursor()
-        cursor.execute(f"SELECT * FROM author")
-        bib = cursor.fetchall()
-
-        self.lib_gui_ui.tableWidget.setRowCount(len(bib))
-        for i in range(len(bib)):
-            for j in range(self.colcount):
-                self.lib_gui_ui.tableWidget.setItem(i, j, QTableWidgetItem(str(bib[i][j])))
-
-        self.lib_gui_ui.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-
-    def showGenre(self):
-        self.colcount = 2
-        self.lib_gui_ui.tableWidget.setColumnCount(self.colcount)
-        row_labels = ["id", "Жанр"]
-        self.lib_gui_ui.tableWidget.setHorizontalHeaderLabels(row_labels)
-
-        self.buttons_show = [self.lib_gui_ui.pushButton_and_or_2]
-        for button in self.buttons_show:
-            button.show()
-
-        self.buttons_hide = [self.lib_gui_ui.pushButton_and_or_3,
-                             self.lib_gui_ui.pushButton_and_or_4, self.lib_gui_ui.pushButton_and_or_5,
-                             self.lib_gui_ui.pushButton_and_or_6, self.lib_gui_ui.pushButton_and_or_7,
-                             self.lib_gui_ui.pushButton_and_or_8, self.lib_gui_ui.pushButton_and_or_9]
-        for button in self.buttons_hide:
-            button.hide()
-
-        self.textEdit_show = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2]
-        for textEdit in self.textEdit_show:
-            textEdit.show()
-
-        self.textEdit_hide = [self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                              self.lib_gui_ui.textEdit_5, self.lib_gui_ui.textEdit_6,
-                              self.lib_gui_ui.textEdit_7, self.lib_gui_ui.textEdit_8,
-                              self.lib_gui_ui.textEdit_9]
-        for textEdit in self.textEdit_hide:
-            textEdit.hide()
-
-        self.textBrowser_show = [self.lib_gui_ui.textBrowser_1, self.lib_gui_ui.textBrowser_2]
-        for textBrowser in self.textBrowser_show:
-            textBrowser.show()
-
-        self.textBrowser_hide = [self.lib_gui_ui.textBrowser_3, self.lib_gui_ui.textBrowser_4,
-                                 self.lib_gui_ui.textBrowser_5, self.lib_gui_ui.textBrowser_6,
-                                 self.lib_gui_ui.textBrowser_7, self.lib_gui_ui.textBrowser_8,
-                                 self.lib_gui_ui.textBrowser_9]
-        for textBrowser in self.textBrowser_hide:
-            textBrowser.hide()
-
-        self.textEdit_setText = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2]
-        for textEdit in self.textEdit_setText:
-            textEdit.setText("")
-
-        self.lib_gui_ui.textBrowser_1.setText(row_labels[0])
-        self.lib_gui_ui.textBrowser_2.setText(row_labels[1])
-
-        cursor = self.conn.cursor()
-        cursor.execute(f"SELECT * FROM genre")
-        bib = cursor.fetchall()
-
-        self.lib_gui_ui.tableWidget.setRowCount(len(bib))
-        for i in range(len(bib)):
-            for j in range(self.colcount):
-                self.lib_gui_ui.tableWidget.setItem(i, j, QTableWidgetItem(str(bib[i][j])))
-
-        self.lib_gui_ui.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-
-    def showLibrarian(self):
-        colcount = 6
-        self.lib_gui_ui.tableWidget.setColumnCount(colcount)
-        row_labels = ["id", "Фамилия", "Имя", "Отчество", "Дата рождения", "Телефон"]
-        self.lib_gui_ui.tableWidget.setHorizontalHeaderLabels(row_labels)
-
-        self.buttons_show = [self.lib_gui_ui.pushButton_and_or_2, self.lib_gui_ui.pushButton_and_or_3,
-                             self.lib_gui_ui.pushButton_and_or_4, self.lib_gui_ui.pushButton_and_or_5,
-                             self.lib_gui_ui.pushButton_and_or_6]
-        for button in self.buttons_show:
-            button.show()
-
-        self.buttons_hide = [self.lib_gui_ui.pushButton_and_or_7,
-                             self.lib_gui_ui.pushButton_and_or_8, self.lib_gui_ui.pushButton_and_or_9]
-        for button in self.buttons_hide:
-            button.hide()
-
-        self.textEdit_show = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2,
-                              self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                              self.lib_gui_ui.textEdit_5, self.lib_gui_ui.textEdit_6]
-        for textEdit in self.textEdit_show:
-            textEdit.show()
-
-        self.textEdit_hide = [self.lib_gui_ui.textEdit_7,
-                              self.lib_gui_ui.textEdit_8, self.lib_gui_ui.textEdit_9]
-        for textEdit in self.textEdit_hide:
-            textEdit.hide()
-
-        self.textBrowser_show = [self.lib_gui_ui.textBrowser_1, self.lib_gui_ui.textBrowser_2,
-                                 self.lib_gui_ui.textBrowser_3, self.lib_gui_ui.textBrowser_4,
-                                 self.lib_gui_ui.textBrowser_5, self.lib_gui_ui.textBrowser_6]
-        for textBrowser in self.textBrowser_show:
-            textBrowser.show()
-
-        self.textBrowser_hide = [self.lib_gui_ui.textBrowser_7,
-                                 self.lib_gui_ui.textBrowser_8, self.lib_gui_ui.textBrowser_9]
-        for textBrowser in self.textBrowser_hide:
-            textBrowser.hide()
-
-        self.textEdit_setText = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2,
-                                 self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                                 self.lib_gui_ui.textEdit_5, self.lib_gui_ui.textEdit_6]
-        for textEdit in self.textEdit_setText:
-            textEdit.setText("")
-
-        self.lib_gui_ui.textBrowser_1.setText(row_labels[0])
-        self.lib_gui_ui.textBrowser_2.setText(row_labels[1])
-        self.lib_gui_ui.textBrowser_3.setText(row_labels[2])
-        self.lib_gui_ui.textBrowser_4.setText(row_labels[3])
-        self.lib_gui_ui.textBrowser_5.setText(row_labels[4])
-        self.lib_gui_ui.textBrowser_5.setText(row_labels[5])
-
-        cursor = self.conn.cursor()
-        cursor.execute(f"SELECT * FROM librarian")
-        bib = cursor.fetchall()
-
-        self.lib_gui_ui.tableWidget.setRowCount(len(bib))
-        for i in range(len(bib)):
-            for j in range(colcount):
-                self.lib_gui_ui.tableWidget.setItem(i, j, QTableWidgetItem(str(bib[i][j])))
-
-        self.lib_gui_ui.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-
-    def showLiterature(self):
-        colcount = 8
-        self.lib_gui_ui.tableWidget.setColumnCount(colcount)
-        row_labels = ["id", "Название", "Жанр", "Автор", "Издательство", "Дата печати", "Возраст", "Стоимость"]
-        self.lib_gui_ui.tableWidget.setHorizontalHeaderLabels(row_labels)
-
-        self.buttons_show = [self.lib_gui_ui.pushButton_and_or_2, self.lib_gui_ui.pushButton_and_or_3,
-                             self.lib_gui_ui.pushButton_and_or_4, self.lib_gui_ui.pushButton_and_or_5,
-                             self.lib_gui_ui.pushButton_and_or_6, self.lib_gui_ui.pushButton_and_or_7,
-                             self.lib_gui_ui.pushButton_and_or_8]
-        for button in self.buttons_show:
-            button.show()
-
-        self.buttons_hide = [self.lib_gui_ui.pushButton_and_or_9]
-        for button in self.buttons_hide:
-            button.hide()
-
-        self.textEdit_show = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2,
-                              self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                              self.lib_gui_ui.textEdit_5, self.lib_gui_ui.textEdit_6,
-                              self.lib_gui_ui.textEdit_7, self.lib_gui_ui.textEdit_8,]
-        for textEdit in self.textEdit_show:
-            textEdit.show()
-
-        self.textEdit_hide = [self.lib_gui_ui.textEdit_9]
-        for textEdit in self.textEdit_hide:
-            textEdit.hide()
-
-        self.textBrowser_show = [self.lib_gui_ui.textBrowser_1, self.lib_gui_ui.textBrowser_2,
-                                 self.lib_gui_ui.textBrowser_3, self.lib_gui_ui.textBrowser_4,
-                                 self.lib_gui_ui.textBrowser_5, self.lib_gui_ui.textBrowser_6,
-                                 self.lib_gui_ui.textBrowser_7, self.lib_gui_ui.textBrowser_8]
-        for textBrowser in self.textBrowser_show:
-            textBrowser.show()
-
-        self.textBrowser_hide = [self.lib_gui_ui.textBrowser_9]
-        for textBrowser in self.textBrowser_hide:
-            textBrowser.hide()
-
-        self.textEdit_setText = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2,
-                                 self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                                 self.lib_gui_ui.textEdit_5, self.lib_gui_ui.textEdit_6,
-                                 self.lib_gui_ui.textEdit_7, self.lib_gui_ui.textEdit_8]
-        for textEdit in self.textEdit_setText:
-            textEdit.setText("")
-
-        self.lib_gui_ui.textBrowser_1.setText(row_labels[0])
-        self.lib_gui_ui.textBrowser_2.setText(row_labels[1])
-        self.lib_gui_ui.textBrowser_3.setText(row_labels[2])
-        self.lib_gui_ui.textBrowser_4.setText(row_labels[3])
-        self.lib_gui_ui.textBrowser_5.setText(row_labels[4])
-        self.lib_gui_ui.textBrowser_6.setText(row_labels[5])
-        self.lib_gui_ui.textBrowser_7.setText(row_labels[6])
-        self.lib_gui_ui.textBrowser_8.setText(row_labels[7])
-
-
-        cursor = self.conn.cursor()
-        cursor.execute(f"SELECT * FROM literature")
-        bib = cursor.fetchall()
-
-        self.lib_gui_ui.tableWidget.setRowCount(len(bib))
-        for i in range(len(bib)):
-            for j in range(colcount):
-                self.lib_gui_ui.tableWidget.setItem(i, j, QTableWidgetItem(str(bib[i][j])))
-
-        self.lib_gui_ui.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-
-    def showLiterature_movement(self):
-        colcount = 7
-        self.lib_gui_ui.tableWidget.setColumnCount(colcount)
-        row_labels = ["id", "Библиотекарь", "Читатель", "Литература", "Дата выдачи", "Дата предполагаемого возврата", "Дата фактического возврата"]
-        self.lib_gui_ui.tableWidget.setHorizontalHeaderLabels(row_labels)
-
-        self.buttons_show = [self.lib_gui_ui.pushButton_and_or_2, self.lib_gui_ui.pushButton_and_or_3,
-                             self.lib_gui_ui.pushButton_and_or_4, self.lib_gui_ui.pushButton_and_or_5,
-                             self.lib_gui_ui.pushButton_and_or_6, self.lib_gui_ui.pushButton_and_or_7]
-        for button in self.buttons_show:
-            button.show()
-
-        self.buttons_hide = [self.lib_gui_ui.pushButton_and_or_8, self.lib_gui_ui.pushButton_and_or_9]
-        for button in self.buttons_hide:
-            button.hide()
-
-        self.textEdit_show = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2,
-                              self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                              self.lib_gui_ui.textEdit_5, self.lib_gui_ui.textEdit_6,
-                              self.lib_gui_ui.textEdit_7]
-        for textEdit in self.textEdit_show:
-            textEdit.show()
-
-        self.textEdit_hide = [self.lib_gui_ui.textEdit_8,self.lib_gui_ui.textEdit_9]
-        for textEdit in self.textEdit_hide:
-            textEdit.hide()
-
-        self.textBrowser_show = [self.lib_gui_ui.textBrowser_1, self.lib_gui_ui.textBrowser_2,
-                                 self.lib_gui_ui.textBrowser_3, self.lib_gui_ui.textBrowser_4,
-                                 self.lib_gui_ui.textBrowser_5, self.lib_gui_ui.textBrowser_6,
-                                 self.lib_gui_ui.textBrowser_7]
-        for textBrowser in self.textBrowser_show:
-            textBrowser.show()
-
-        self.textBrowser_hide = [self.lib_gui_ui.textBrowser_8, self.lib_gui_ui.textBrowser_9]
-        for textBrowser in self.textBrowser_hide:
-            textBrowser.hide()
-
-        self.textEdit_setText = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2,
-                                 self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                                 self.lib_gui_ui.textEdit_5, self.lib_gui_ui.textEdit_6,
-                                 self.lib_gui_ui.textEdit_7]
-        for textEdit in self.textEdit_setText:
-            textEdit.setText("")
-
-        self.lib_gui_ui.textBrowser_1.setText(row_labels[0])
-        self.lib_gui_ui.textBrowser_2.setText(row_labels[1])
-        self.lib_gui_ui.textBrowser_3.setText(row_labels[2])
-        self.lib_gui_ui.textBrowser_4.setText(row_labels[3])
-        self.lib_gui_ui.textBrowser_5.setText(row_labels[4])
-        self.lib_gui_ui.textBrowser_6.setText(row_labels[5])
-        self.lib_gui_ui.textBrowser_7.setText(row_labels[6])
-
-
-
-        cursor = self.conn.cursor()
-        cursor.execute(f"SELECT * FROM literature_movement")
-        bib = cursor.fetchall()
-
-        self.lib_gui_ui.tableWidget.setRowCount(len(bib))
-        for i in range(len(bib)):
-            for j in range(colcount):
-                self.lib_gui_ui.tableWidget.setItem(i, j, QTableWidgetItem(str(bib[i][j])))
-
-        self.lib_gui_ui.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-
-    def showPenalties(self):
-        colCount = 7
-        self.lib_gui_ui.tableWidget.setColumnCount(colCount)
-        row_labels = ["id", "Читатель", "Библиотекарь", "Движение книги", "Сумма", "Основание", "Статус оплаты"]
-        self.lib_gui_ui.tableWidget.setHorizontalHeaderLabels(row_labels)
-
-        self.buttons_show = [self.lib_gui_ui.pushButton_and_or_2, self.lib_gui_ui.pushButton_and_or_3,
-                             self.lib_gui_ui.pushButton_and_or_4, self.lib_gui_ui.pushButton_and_or_5,
-                             self.lib_gui_ui.pushButton_and_or_6, self.lib_gui_ui.pushButton_and_or_7]
-        for button in self.buttons_show:
-            button.show()
-
-        self.buttons_hide = [self.lib_gui_ui.pushButton_and_or_8, self.lib_gui_ui.pushButton_and_or_9]
-        for button in self.buttons_hide:
-            button.hide()
-
-        self.textEdit_show = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2,
-                              self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                              self.lib_gui_ui.textEdit_5, self.lib_gui_ui.textEdit_6,
-                              self.lib_gui_ui.textEdit_7]
-        for textEdit in self.textEdit_show:
-            textEdit.show()
-
-        self.textEdit_hide = [self.lib_gui_ui.textEdit_8,self.lib_gui_ui.textEdit_9]
-        for textEdit in self.textEdit_hide:
-            textEdit.hide()
-
-        self.textBrowser_show = [self.lib_gui_ui.textBrowser_1, self.lib_gui_ui.textBrowser_2,
-                                 self.lib_gui_ui.textBrowser_3, self.lib_gui_ui.textBrowser_4,
-                                 self.lib_gui_ui.textBrowser_5, self.lib_gui_ui.textBrowser_6,
-                                 self.lib_gui_ui.textBrowser_7]
-        for textBrowser in self.textBrowser_show:
-            textBrowser.show()
-
-        self.textBrowser_hide = [self.lib_gui_ui.textBrowser_8, self.lib_gui_ui.textBrowser_9]
-        for textBrowser in self.textBrowser_hide:
-            textBrowser.hide()
-
-        self.textEdit_setText = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2,
-                                 self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                                 self.lib_gui_ui.textEdit_5, self.lib_gui_ui.textEdit_6,
-                                 self.lib_gui_ui.textEdit_7]
-        for textEdit in self.textEdit_setText:
-            textEdit.setText("")
-
-        self.lib_gui_ui.textBrowser_1.setText(row_labels[0])
-        self.lib_gui_ui.textBrowser_2.setText(row_labels[1])
-        self.lib_gui_ui.textBrowser_3.setText(row_labels[2])
-        self.lib_gui_ui.textBrowser_4.setText(row_labels[3])
-        self.lib_gui_ui.textBrowser_5.setText(row_labels[4])
-        self.lib_gui_ui.textBrowser_6.setText(row_labels[5])
-        self.lib_gui_ui.textBrowser_7.setText(row_labels[6])
-
-
-
-        cursor = self.conn.cursor()
-        cursor.execute(f"SELECT * FROM penalties")
-        bib = cursor.fetchall()
-
-        self.lib_gui_ui.tableWidget.setRowCount(len(bib))
-        for i in range(len(bib)):
-            for j in range(colCount):
-                self.lib_gui_ui.tableWidget.setItem(i, j, QTableWidgetItem(str(bib[i][j])))
-
-        self.lib_gui_ui.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-
-    def showPublishing_house(self):
-        colcount = 5
-        self.lib_gui_ui.tableWidget.setColumnCount(colcount)
-        row_labels = ["id", "Название", "Адресс", "Телефон", "Электронная почта"]
-        self.lib_gui_ui.tableWidget.setHorizontalHeaderLabels(row_labels)
-
-        self.buttons_show = [self.lib_gui_ui.pushButton_and_or_2, self.lib_gui_ui.pushButton_and_or_3,
-                             self.lib_gui_ui.pushButton_and_or_4, self.lib_gui_ui.pushButton_and_or_5]
-        for button in self.buttons_show:
-            button.show()
-
-        self.buttons_hide = [self.lib_gui_ui.pushButton_and_or_6, self.lib_gui_ui.pushButton_and_or_7,
-                             self.lib_gui_ui.pushButton_and_or_8, self.lib_gui_ui.pushButton_and_or_9]
-        for button in self.buttons_hide:
-            button.hide()
-
-        self.textEdit_show = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2,
-                              self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                              self.lib_gui_ui.textEdit_5]
-        for textEdit in self.textEdit_show:
-            textEdit.show()
-
-        self.textEdit_hide = [self.lib_gui_ui.textEdit_6, self.lib_gui_ui.textEdit_7,
-                              self.lib_gui_ui.textEdit_8, self.lib_gui_ui.textEdit_9]
-        for textEdit in self.textEdit_hide:
-            textEdit.hide()
-
-        self.textBrowser_show = [self.lib_gui_ui.textBrowser_1, self.lib_gui_ui.textBrowser_2,
-                                 self.lib_gui_ui.textBrowser_3, self.lib_gui_ui.textBrowser_4,
-                                 self.lib_gui_ui.textBrowser_5]
-        for textBrowser in self.textBrowser_show:
-            textBrowser.show()
-
-        self.textBrowser_hide = [self.lib_gui_ui.textBrowser_6, self.lib_gui_ui.textBrowser_7,
-                                 self.lib_gui_ui.textBrowser_8, self.lib_gui_ui.textBrowser_9]
-        for textBrowser in self.textBrowser_hide:
-            textBrowser.hide()
-
-        self.textEdit_setText = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2,
-                                 self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                                 self.lib_gui_ui.textEdit_5]
-        for textEdit in self.textEdit_setText:
-            textEdit.setText("")
-
-        self.lib_gui_ui.textBrowser_1.setText(row_labels[0])
-        self.lib_gui_ui.textBrowser_2.setText(row_labels[1])
-        self.lib_gui_ui.textBrowser_3.setText(row_labels[2])
-        self.lib_gui_ui.textBrowser_4.setText(row_labels[3])
-        self.lib_gui_ui.textBrowser_5.setText(row_labels[4])
-
-        cursor = self.conn.cursor()
-        cursor.execute(f"SELECT * FROM publishing_house")
-        bib = cursor.fetchall()
-
-        self.lib_gui_ui.tableWidget.setRowCount(len(bib))
-        for i in range(len(bib)):
-            for j in range(colcount):
-                self.lib_gui_ui.tableWidget.setItem(i, j, QTableWidgetItem(str(bib[i][j])))
-
-        self.lib_gui_ui.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-
-    def showReader(self):
-        colcount = 9
-        self.lib_gui_ui.tableWidget.setColumnCount(colcount)
-        row_labels = ["id", "Фамилия", "Имя", "Отчество", "Дата рождения", "Дата регистрации", "Алресс", "Телефон", "Пасспорт"]
-        self.lib_gui_ui.tableWidget.setHorizontalHeaderLabels(row_labels)
-
-        self.buttons_show = [self.lib_gui_ui.pushButton_and_or_2, self.lib_gui_ui.pushButton_and_or_3,
-                             self.lib_gui_ui.pushButton_and_or_4, self.lib_gui_ui.pushButton_and_or_5,
-                             self.lib_gui_ui.pushButton_and_or_6, self.lib_gui_ui.pushButton_and_or_7,
-                             self.lib_gui_ui.pushButton_and_or_8, self.lib_gui_ui.pushButton_and_or_9]
-        for button in self.buttons_show:
-            button.show()
-
-        self.textEdit_show = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2,
-                              self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                              self.lib_gui_ui.textEdit_5, self.lib_gui_ui.textEdit_6,
-                              self.lib_gui_ui.textEdit_7, self.lib_gui_ui.textEdit_8,
-                              self.lib_gui_ui.textEdit_9]
-        for textEdit in self.textEdit_show:
-            textEdit.show()
-
-        self.textBrowser_show = [self.lib_gui_ui.textBrowser_1, self.lib_gui_ui.textBrowser_2,
-                                 self.lib_gui_ui.textBrowser_3, self.lib_gui_ui.textBrowser_4,
-                                 self.lib_gui_ui.textBrowser_5, self.lib_gui_ui.textBrowser_6,
-                                 self.lib_gui_ui.textBrowser_7, self.lib_gui_ui.textBrowser_8,
-                                 self.lib_gui_ui.textBrowser_9]
-        for textBrowser in self.textBrowser_show:
-            textBrowser.show()
-
-
-        self.textEdit_setText = [self.lib_gui_ui.textEdit_1, self.lib_gui_ui.textEdit_2,
-                                 self.lib_gui_ui.textEdit_3, self.lib_gui_ui.textEdit_4,
-                                 self.lib_gui_ui.textEdit_5, self.lib_gui_ui.textEdit_6,
-                                 self.lib_gui_ui.textEdit_7, self.lib_gui_ui.textEdit_8,
-                                 self.lib_gui_ui.textEdit_9]
-        for textEdit in self.textEdit_setText:
-            textEdit.setText("")
-
-        self.lib_gui_ui.textBrowser_1.setText(row_labels[0])
-        self.lib_gui_ui.textBrowser_2.setText(row_labels[1])
-        self.lib_gui_ui.textBrowser_3.setText(row_labels[2])
-        self.lib_gui_ui.textBrowser_4.setText(row_labels[3])
-        self.lib_gui_ui.textBrowser_5.setText(row_labels[4])
-        self.lib_gui_ui.textBrowser_6.setText(row_labels[5])
-        self.lib_gui_ui.textBrowser_7.setText(row_labels[6])
-        self.lib_gui_ui.textBrowser_8.setText(row_labels[7])
-        self.lib_gui_ui.textBrowser_9.setText(row_labels[8])
-
-        cursor = self.conn.cursor()
-        cursor.execute(f"SELECT * FROM reader")
-        bib = cursor.fetchall()
-
-        self.lib_gui_ui.tableWidget.setRowCount(len(bib))
-        for i in range(len(bib)):
-            for j in range(colcount):
-                self.lib_gui_ui.tableWidget.setItem(i, j, QTableWidgetItem(str(bib[i][j])))
-
-        self.lib_gui_ui.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-
-    def filter(self):
+        for i in range(len(self.masks_for_tables)):
+            if text == self.masks_for_tables[i][0]:
+                self.table_n = i
+                self.lib_gui_ui.tableWidget.setSortingEnabled(False)
+                self.show_table()
+                self.lib_gui_ui.tableWidget.setSortingEnabled(True)
+
+    def show_table(self):
         try:
             cursor = self.conn.cursor()
-
-            sql_colum_name = (f"SELECT column_name FROM information_schema.columns WHERE table_name = '" + self.table + "' ORDER BY ordinal_position;")
-
+            cursor.execute(f"SAVEPOINT SP1")
+            sql_colum_name = (
+                f"SELECT column_name FROM information_schema.columns WHERE table_name = '{self.masks_for_tables[self.table_n][1]}' ORDER BY ordinal_position;")
             cursor.execute(sql_colum_name)
             colum_name = cursor.fetchall()
 
-            sql = (f"SELECT * FROM " + self.table + " WHERE (")
+            if self.table_n == 0:
+                row_labels = ["id", "Фамилия", "Имя", "Отчество", "Дата рождения"]
+            elif self.table_n == 1:
+                row_labels = ["id", "Жанр"]
+            elif self.table_n == 2:
+                row_labels = ["id", "Фамилия", "Имя", "Отчество", "Дата рождения", "Телефон"]
+            elif self.table_n == 3:
+                row_labels = ["id", "Название", "Жанр", "Автор", "Издательство", "Дата печати", "Возраст", "Стоимость"]
+            elif self.table_n == 4:
+                row_labels = ["id", "Библиотекарь", "Читатель", "Литература", "Дата выдачи",
+                            "Дата предполагаемого возврата", "Дата фактического возврата"]
+            elif self.table_n == 5:
+                row_labels = ["id", "Читатель", "Библиотекарь", "Движение книги", "Сумма", "Основание", "Статус оплаты"]
+            elif self.table_n == 6:
+                row_labels = ["id", "Название", "Адресс", "Телефон", "Электронная почта"]
+            elif self.table_n == 7:
+                row_labels = ["id", "Фамилия", "Имя", "Отчество", "Дата рождения", "Дата регистрации", "Алресс", "Телефон",
+                            "Пасспорт"]
 
-            if self.lib_gui_ui.textEdit_1.toPlainText():
-                sql = sql + str(colum_name[0])[2:-3] + " = '" + str(self.lib_gui_ui.textEdit_1.toPlainText()) + "'"
+            for i in range(len(row_labels)):
+                self.textBrowser[i].setText(row_labels[i])
 
-            if self.lib_gui_ui.textEdit_2.toPlainText():
-                if self.lib_gui_ui.textEdit_1.toPlainText():
-                    sql = sql + " " + str(self.lib_gui_ui.pushButton_and_or_2.text()) + " "
-                sql = sql + str(colum_name[1])[2:-3] + " = '" + str(self.lib_gui_ui.textEdit_2.toPlainText()) + "'"
+            self.lib_gui_ui.tableWidget.setColumnCount(len(colum_name))
+            self.lib_gui_ui.tableWidget.setHorizontalHeaderLabels(row_labels)
 
-            if self.lib_gui_ui.textEdit_3.toPlainText():
-                if self.lib_gui_ui.textEdit_2.toPlainText():
-                    sql = sql + " " + str(self.lib_gui_ui.pushButton_and_or_3.text()) + " "
-                sql = sql + str(colum_name[2])[2:-3] + " = '" + str(self.lib_gui_ui.textEdit_3.toPlainText()) + "'"
+            for i in range(len(self.Button_and_or)):
+                self.do_hide(self.Button_and_or[i])
+            for i in range(len(colum_name) - 1):
+                self.do_show(self.Button_and_or[i])
 
-            if self.lib_gui_ui.textEdit_4.toPlainText():
-                if self.lib_gui_ui.textEdit_3.toPlainText():
-                    sql = sql + " " + str(self.lib_gui_ui.pushButton_and_or_4.text()) + " "
-                sql = sql + str(colum_name[3])[2:-3] + " = '" + str(self.lib_gui_ui.textEdit_4.toPlainText()) + "'"
+            for i in range(len(self.textEdit)):
+               self.do_hide(self.textEdit[i])
+            for i in range(len(colum_name)):
+                self.do_show(self.textEdit[i])
 
-            if self.lib_gui_ui.textEdit_5.toPlainText():
-                if self.lib_gui_ui.textEdit_4.toPlainText():
-                    sql = sql + " " + str(self.lib_gui_ui.pushButton_and_or_5.text()) + " "
-                sql = sql + str(colum_name[4])[2:-3] + " = '" + str(self.lib_gui_ui.textEdit_5.toPlainText()) + "'"
+            for i in range(len(self.textBrowser)):
+                self.do_hide(self.textBrowser[i])
+            for i in range(len(colum_name)):
+                self.do_show(self.textBrowser[i])
 
-            if self.lib_gui_ui.textEdit_6.toPlainText():
-                if self.lib_gui_ui.textEdit_5.toPlainText():
-                    sql = sql + " " + str(self.lib_gui_ui.pushButton_and_or_6.text()) + " "
-                sql = sql + str(colum_name[5])[2:-3] + " = '" + str(self.lib_gui_ui.textEdit_6.toPlainText()) + "'"
+            cursor = self.conn.cursor()
 
-            if self.lib_gui_ui.textEdit_7.toPlainText():
-                if self.lib_gui_ui.textEdit_6.toPlainText():
-                    sql = sql + " " + str(self.lib_gui_ui.pushButton_and_or_7.text()) + " "
-                sql = sql + str(colum_name[6])[2:-3] + " = '" + str(self.lib_gui_ui.textEdit_7.toPlainText()) + "'"
+            cursor.execute(f"select * from current_user")
+            username = cursor.fetchall()
+            if  str(username)[3:6] == 'rea' and (self.masks_for_tables[self.table_n][1] == 'literature_movement'
+                                                or self.masks_for_tables[self.table_n][1] == 'reader'
+                                                or self.masks_for_tables[self.table_n][1] == 'penalties'):
 
-            if self.lib_gui_ui.textEdit_8.toPlainText():
-                if self.lib_gui_ui.textEdit_7.toPlainText():
-                    sql = sql + " " + str(self.lib_gui_ui.pushButton_and_or_8.text()) + " "
-                sql = sql + str(colum_name[7])[2:-3] + " = '" + str(self.lib_gui_ui.textEdit_8.toPlainText()) + "'"
+                cursor.execute(f"SELECT * FROM " + self.masks_for_tables[self.table_n][1] + " where rea_id = '" + str(username)[6:-4] + "'")
+            else:
+                cursor.execute(f"SELECT * FROM " + self.masks_for_tables[self.table_n][1])
+            bib = cursor.fetchall()
 
-            if self.lib_gui_ui.textEdit_9.toPlainText():
-                if self.lib_gui_ui.textEdit_8.toPlainText():
-                    sql = sql + " " + str(self.lib_gui_ui.pushButton_and_or_9.text()) + " "
-                sql = sql + str(colum_name[8])[2:-3] + " = '" + str(self.lib_gui_ui.textEdit_9.toPlainText()) + "'"
+            self.lib_gui_ui.tableWidget.setRowCount(len(bib))
+            for i in range(len(bib)):
+                for j in range(len(colum_name)):
+                    self.lib_gui_ui.tableWidget.setItem(i, j, QTableWidgetItem(str(bib[i][j])))
 
+            self.lib_gui_ui.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+
+            cursor.execute(f"RELEASE SAVEPOINT SP1")
+
+        except(Exception, Error) as error:
+            QMessageBox.warning(self, 'Ошибка!', str(error))
+            cursor.execute(f"ROLLBACK TO SAVEPOINT SP1")
+
+    def filter_table(self):
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(f"SAVEPOINT SP1")
+            sql_colum_name = (
+                f"SELECT column_name FROM information_schema.columns WHERE table_name = '{self.masks_for_tables[self.table_n][1]}' ORDER BY ordinal_position;")
+            cursor.execute(sql_colum_name)
+            colum_name = cursor.fetchall()
+
+            sql = (f"SELECT * FROM " + self.masks_for_tables[self.table_n][1] + " WHERE (")
+            for i in range(len(colum_name)):
+                if self.textEdit[i].toPlainText():
+                    if self.Button_and_or[i - 1].text() != '':
+                        sql = sql + " " + self.Button_and_or[i - 1].text() + " "
+                    sql = sql + colum_name[i][0] + " = '" + str(self.textEdit[i].toPlainText()) + "'"
             sql = sql + ");"
 
             cursor.execute(sql)
@@ -710,18 +248,21 @@ class lib_gui_Window(QMainWindow):
 
             self.lib_gui_ui.tableWidget.setRowCount(len(filter_result))
             for i in range(len(filter_result)):
-                for j in range(self.colcount):
+                for j in range(len(colum_name)):
                     self.lib_gui_ui.tableWidget.setItem(i, j, QTableWidgetItem(str(filter_result[i][j])))
             self.lib_gui_ui.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
 
+            cursor.execute(f"RELEASE SAVEPOINT SP1")
 
         except(Exception, Error) as error:
             QMessageBox.warning(self, 'Ошибка!', str(error))
+            cursor.execute(f"ROLLBACK TO SAVEPOINT SP1")
 
-    def add(self):
+    def add_table(self):
         try:
             cursor = self.conn.cursor()
-            sql = (f"INSERT INTO  " + self.table + " VALUES ('")
+            cursor.execute(f"SAVEPOINT SP1")
+            sql = (f"INSERT INTO  " + self.masks_for_tables[self.table_n][1] + " VALUES ('")
 
             if self.lib_gui_ui.textEdit_1.toPlainText():
                 sql = sql + self.lib_gui_ui.textEdit_1.toPlainText()
@@ -747,20 +288,22 @@ class lib_gui_Window(QMainWindow):
             cursor.execute(sql)
             self.conn.commit()
 
+            cursor.execute(f"RELEASE SAVEPOINT SP1")
+
         except(Exception, Error) as error:
             QMessageBox.warning(self, 'Ошибка!', str(error))
+            cursor.execute(f"ROLLBACK TO SAVEPOINT SP1")
 
-    def delete(self):
+    def delete_table(self):
         try:
             cursor = self.conn.cursor()
-
+            cursor.execute(f"SAVEPOINT SP1")
             sql_colum_name = (
-                        f"SELECT column_name FROM information_schema.columns WHERE table_name = '" + self.table + "' ORDER BY ordinal_position;")
-
+                f"SELECT column_name FROM information_schema.columns WHERE table_name = '{self.masks_for_tables[self.table_n][1]}' ORDER BY ordinal_position;")
             cursor.execute(sql_colum_name)
             colum_name = cursor.fetchall()
 
-            sql = (f"DELETE FROM " + self.table + " WHERE (")
+            sql = (f"DELETE FROM " + self.masks_for_tables[self.table_n][1] + " WHERE (")
 
             if self.lib_gui_ui.textEdit_1.toPlainText():
                 sql = sql + str(colum_name[0])[2:-3] + " = '" + str(self.lib_gui_ui.textEdit_1.toPlainText()) + "'"
@@ -809,20 +352,22 @@ class lib_gui_Window(QMainWindow):
 
             cursor.execute(sql)
 
+            cursor.execute(f"RELEASE SAVEPOINT SP1")
+
         except(Exception, Error) as error:
             QMessageBox.warning(self, 'Ошибка!', str(error))
+            cursor.execute(f"ROLLBACK TO SAVEPOINT SP1")
 
-    def update(self):
+    def update_table(self):
         try:
             cursor = self.conn.cursor()
-
+            cursor.execute(f"SAVEPOINT SP1")
             sql_colum_name = (
-                        f"SELECT column_name FROM information_schema.columns WHERE table_name = '" + self.table + "' ORDER BY ordinal_position;")
-
+                f"SELECT column_name FROM information_schema.columns WHERE table_name = '{self.masks_for_tables[self.table_n][1]}' ORDER BY ordinal_position;")
             cursor.execute(sql_colum_name)
             colum_name = cursor.fetchall()
 
-            sql = (f"UPDATE " + self.table + " SET ")
+            sql = (f"UPDATE " + self.masks_for_tables[self.table_n][1] + " SET ")
 
             if self.lib_gui_ui.textEdit_1.toPlainText():
                 sql = sql + str(colum_name[0])[2:-3] + " = '" + str(self.lib_gui_ui.textEdit_1.toPlainText()) + "'"
@@ -871,8 +416,11 @@ class lib_gui_Window(QMainWindow):
 
             cursor.execute(sql)
 
+            cursor.execute(f"RELEASE SAVEPOINT SP1")
+
         except(Exception, Error) as error:
             QMessageBox.warning(self, 'Ошибка!', str(error))
+            cursor.execute(f"ROLLBACK TO SAVEPOINT SP1")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
