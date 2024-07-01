@@ -241,7 +241,9 @@ class lib_gui_Window(QMainWindow):
                     if self.Button_and_or[i - 1].text() != '':
                         sql = sql + " " + self.Button_and_or[i - 1].text() + " "
                     sql = sql + colum_name[i][0] + " = '" + str(self.textEdit[i].toPlainText()) + "'"
-            sql = sql + ");"
+
+            sql = sql.replace(';', '')
+            sql = sql + "');"
 
             cursor.execute(sql)
             filter_result = cursor.fetchall()
@@ -283,6 +285,7 @@ class lib_gui_Window(QMainWindow):
             if self.lib_gui_ui.textEdit_9.isVisible() and self.lib_gui_ui.textEdit_9.toPlainText():
                 sql = sql  + "', '" + self.lib_gui_ui.textEdit_9.toPlainText()
 
+            sql = sql.replace(';', '')
             sql = sql + "');"
 
             cursor.execute(sql)
@@ -348,7 +351,8 @@ class lib_gui_Window(QMainWindow):
                     sql = sql + " " + str(self.lib_gui_ui.pushButton_and_or_9.text()) + " "
                 sql = sql + str(colum_name[8])[2:-3] + " = '" + str(self.lib_gui_ui.textEdit_9.toPlainText()) + "'"
 
-            sql = sql + ");"
+            sql = sql.replace(';', '')
+            sql = sql + "');"
 
             cursor.execute(sql)
 
@@ -412,7 +416,10 @@ class lib_gui_Window(QMainWindow):
                     sql = sql + ", "
                 sql = sql + str(colum_name[8])[2:-3] + " = '" + str(self.lib_gui_ui.textEdit_9.toPlainText()) + "'"
 
-            sql = sql + " WHERE (" + str(colum_name[0])[2:-3] + " = '" + (self.lib_gui_ui.tableWidget.item(self.lib_gui_ui.tableWidget.currentRow(), 0).text()) + "');"
+            sql = sql + " WHERE (" + str(colum_name[0])[2:-3] + " = '" + (self.lib_gui_ui.tableWidget.item(self.lib_gui_ui.tableWidget.currentRow(), 0).text())
+
+            sql = sql.replace(';', '')
+            sql = sql + "');"
 
             cursor.execute(sql)
 
