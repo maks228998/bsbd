@@ -174,10 +174,9 @@ class lib_gui_Window(QMainWindow):
             elif self.table_n == 5:
                 row_labels = ["id", "Читатель", "Библиотекарь", "Движение книги", "Сумма", "Основание", "Статус оплаты"]
             elif self.table_n == 6:
-                row_labels = ["id", "Название", "Адресс", "Телефон", "Электронная почта"]
+                row_labels = ["id", "Название", "Адресс", "Телефон", "Электронная почта", "Паспорт"]
             elif self.table_n == 7:
-                row_labels = ["id", "Фамилия", "Имя", "Отчество", "Дата рождения", "Дата регистрации", "Алресс", "Телефон",
-                            "Пасспорт"]
+                row_labels = ["id", "Фамилия", "Имя", "Отчество", "Дата рождения", "Дата регистрации", "Адресс", "Телефон", "Пасспорт"]
 
             for i in range(len(row_labels)):
                 self.textBrowser[i].setText(row_labels[i])
@@ -243,7 +242,8 @@ class lib_gui_Window(QMainWindow):
                     sql = sql + colum_name[i][0] + " = '" + str(self.textEdit[i].toPlainText()) + "'"
 
             sql = sql.replace(';', '')
-            sql = sql + "');"
+            print(sql)
+            sql = sql + ");"
 
             cursor.execute(sql)
             filter_result = cursor.fetchall()
@@ -289,7 +289,6 @@ class lib_gui_Window(QMainWindow):
             sql = sql + "');"
 
             cursor.execute(sql)
-            self.conn.commit()
 
             cursor.execute(f"RELEASE SAVEPOINT SP1")
 
@@ -352,7 +351,7 @@ class lib_gui_Window(QMainWindow):
                 sql = sql + str(colum_name[8])[2:-3] + " = '" + str(self.lib_gui_ui.textEdit_9.toPlainText()) + "'"
 
             sql = sql.replace(';', '')
-            sql = sql + "');"
+            sql = sql + ");"
 
             cursor.execute(sql)
 
